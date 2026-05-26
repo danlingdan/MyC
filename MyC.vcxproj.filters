@@ -19,4 +19,11 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="test.sh" />
+    <None Include="MyC.slnx" />
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+    <None Include="Makefile" />
+  </ItemGroup>
 </Project>
