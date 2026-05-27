@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* 分词器 */
 // Token种类枚举
 typedef enum {
 	TK_RESERVED, // 关键字或标点符
@@ -103,7 +104,7 @@ Token* tokenize(void) {
 		}
 
 		// 运算符
-		if (*p == '+' || *p == '-') {
+		if (ispunct(*p)) {
 			cur = new_token(TK_RESERVED, cur, p++);
 			continue;
 		}
@@ -125,6 +126,142 @@ Token* tokenize(void) {
 	return head.next;
 }
 
+/* 解析器 */
+// 采用递归下降
+// Node枚举
+typedef enum {
+	ND_ADD, // 加
+	ND_SUB, // 减
+	ND_MUL, // 乘
+	ND_DIV, // 除
+	ND_NUM, // 整数
+} NodeKind;
+
+// AST(抽象语法树) Node种类
+typedef struct Node Node;
+struct Node
+{
+	NodeKind kind;
+	Node* lhs; // 左节点
+	Node* rhs; // 右节点
+	long val; // 如果为整数枚举则有使用
+};
+
+// 创建新Node
+static Node* new_node(NodeKind kind) {
+	Node* node = calloc(1, sizeof(Node));
+	node->kind = kind;
+	return node;
+}
+
+// 创建二分树Node
+static Node* new_binary(NodeKind kind, Node* lhs, Node* rhs) {
+	Node* node = new_node(kind);
+	node->lhs = lhs;
+	node->rhs = rhs;
+	return node;
+}
+
+// 创建新整数Node
+static Node* new_num(int val) {
+	Node* node = new_node(ND_NUM);
+	node->val = val;
+	return node;
+}
+
+//向前声明
+static Node* expr(void);
+static Node* mul(void);
+static Node* primary(void);
+
+// 一个表达式（expr）由一个乘法项（mul）开头，后面可以跟零个或多个“加/减号 + 乘法项”的组合。
+static Node* expr(void)
+{
+	Node* node = mul();
+
+	for (;;) {
+		if (consume('+'))
+			node = new_binary(ND_ADD, node, mul());
+		else if (consume('-'))
+			node = new_binary(ND_SUB, node, mul());
+		else
+			return node;
+	}
+}
+
+// 一个乘法式（mul）由一个符号式（primary）开头，后面可以跟零个或多个“乘/除号 + 符号式”的组合。
+static Node* mul(void)
+{
+	Node* node = primary();
+
+	for (;;) {
+		if (consume('*'))
+			node = new_binary(ND_MUL, node, primary());
+		else if (consume('/'))
+			node = new_binary(ND_DIV, node, primary());
+		else
+			return node;
+	}
+}
+
+// 最底层原子单元(mainly符号如括号数字等)
+static Node* primary(void)
+{
+	if (consume('(')) {
+		Node* node = expr();
+		except(')');
+		return node;
+	}
+
+	return new_num(except_number());
+}
+
+/* 汇编代码生成器 */
+// 生成函数
+static void gen(Node* node) {
+	// 如果是数字,压栈
+	if (node->kind == ND_NUM) {
+		printf("  push %ld\n", node->val);
+		return;
+	}
+
+	// 生成左右节点代码
+	gen(node->lhs);
+	gen(node->rhs);
+
+	// 出栈以给左右子树腾出寄存器空间
+	printf("  pop rdi\n");
+	printf("  pop rax\n");
+
+	/* 核心约定 */
+	/*
+	左操作数始终存放在 rax 寄存器中。
+	右操作数始终存放在 rdi 寄存器中。
+	计算结果始终写回 rax 寄存器。
+	*/
+
+
+	// 根据类型生成代码
+	switch (node->kind)
+	{
+	case ND_ADD:
+		printf("  add rax, rdi\n");
+		break;
+	case ND_SUB:
+		printf("  sub rax, rdi\n");
+		break;
+	case ND_MUL:
+		printf("  imul rax, rdi\n");
+		break;
+	case ND_DIV:
+		printf("  cqo\n"); // 符号扩展
+		printf("  idiv rdi\n"); // 用rdx:rax ÷ rdi，商存入 rax，余数存入 rdx
+		break;
+	}
+
+	printf("  push rax\n");
+}
+
 
 
 int main(int argc,char **argv) {
@@ -135,31 +272,21 @@ int main(int argc,char **argv) {
 		return 1;
 	}
 
-	// 准备token分词
+	// 准备token分词和解析
 	user_input = argv[1];
 	token = tokenize();
+	Node* node = expr();
 
-	// 汇编全局变量
+	// 输出关键全局汇编代码
 	printf(".intel_syntax noprefix\n");
 	printf(".global main\n");
 	printf("main: \n");
 
-	// 第一个token必须为数字
-	printf("mov rax,%ld\n", except_number());
-
-	// 接下来"+ 数字"和"- 数字"
-	while (!at_eof())
-	{
-		if (consume('+')) {
-			printf("  add rax,%ld", except_number());
-			continue;
-		}
-
-		
-		except('-');
-		printf("  sub rax,%ld", except_number());
-	}
+	// 遍历AST以生成汇编
+	gen(node);
 	
+	// 结果必须在栈顶,出栈到rax来拿到程序退出码
+	printf(" pop rax\n");
 	// 汇编结束
 	printf("  ret\n");
 
