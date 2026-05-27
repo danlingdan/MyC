@@ -173,6 +173,7 @@ static Node* new_num(int val) {
 //向前声明
 static Node* expr(void);
 static Node* mul(void);
+static Node* unary(void);
 static Node* primary(void);
 
 // 一个表达式（expr）由一个乘法项（mul）开头，后面可以跟零个或多个“加/减号 + 乘法项”的组合。
@@ -190,19 +191,28 @@ static Node* expr(void)
 	}
 }
 
-// 一个乘法式（mul）由一个符号式（primary）开头，后面可以跟零个或多个“乘/除号 + 符号式”的组合。
+// mul 解析乘法/除法表达式，左操作数为 unary，右侧可重复匹配 "* unary" 或 "/ unary"（左结合）
 static Node* mul(void)
 {
-	Node* node = primary();
+	Node* node = unary();
 
 	for (;;) {
 		if (consume('*'))
-			node = new_binary(ND_MUL, node, primary());
+			node = new_binary(ND_MUL, node, unary());
 		else if (consume('/'))
-			node = new_binary(ND_DIV, node, primary());
+			node = new_binary(ND_DIV, node, unary());
 		else
 			return node;
 	}
+}
+
+// unary 解析一元表达式：可选的前置 "+" 或 "-" 后递归跟随 unary，否则回退到 primary 解析原子单元
+static Node* unary(void) {
+	if (consume('+'))
+		return unary();
+	if (consume('-'))
+		return new_binary(ND_SUB, new_num(0), unary());
+	return primary();
 }
 
 // 最底层原子单元(mainly符号如括号数字等)
