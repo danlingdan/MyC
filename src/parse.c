@@ -29,9 +29,17 @@ static Node* new_num(int val) {
 	return node;
 }
 
+// 创建一个新的变量Node
+static Node* new_var_node(char name) {
+	Node* node = new_node(ND_VAR);
+	node->name = name;
+	return node;
+}
+
 // 向前声明
 static Node* stmt(void);
 static Node* expr(void);
+static Node* assign(void);
 static Node* equality(void);
 static Node* relational(void);
 static Node* add(void);
@@ -65,13 +73,22 @@ static Node* stmt(void) {
 	return node;
 }
 
-// expr 是表达式的入口规则，当前直接委托给 equality 解析（即表达式的最顶层就是相等性运算）
+// expr 解析表达式：当前直接委托给 assign，作为表达式文法的入口规则
 static Node* expr(void)
 {
-	return equality();
+	return assign();
 }
 
-// // equality 解析相等性表达式，以 relational 为左操作数，右侧可重复匹配 "==" 或 "!=" 连接 relational(左结合)
+// assign 解析赋值表达式：先解析equality，若后跟"="则递归解析右侧assign(右结合)，否则直接返回 equality 结果
+static Node* assign(void)
+{
+	Node* node = equality();
+	if (consume("="))
+		node = new_binary(ND_ASSIGN, node, assign());
+	return node;
+}
+
+// equality 解析相等性表达式，以 relational 为左操作数，右侧可重复匹配 "==" 或 "!=" 连接 relational(左结合)
 static Node* equality(void)
 {
 	Node* node = relational();
@@ -145,13 +162,17 @@ static Node* unary(void) {
 	return primary();
 }
 
-// 最底层原子单元(mainly符号如括号数字等)
+// primary 解析基本表达式：支持括号包裹的表达式、标识符或数字字面量
 static Node* primary(void) {
 	if (consume("(")) {
 		Node* node = expr();
 		expect(")");
 		return node;
 	}
+
+	Token* tok = consume_ident();
+	if (tok)
+		return new_var_node(*tok->str);
 
 	return new_num(expect_number());
 }

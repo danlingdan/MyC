@@ -1,6 +1,33 @@
 #include "hua.h"
 
 /* 汇编代码生成器 */
+// 将Node地址入栈
+static void gen_addr(Node* node) {
+	// 判断当前节点是否为变量（只有变量才有内存地址）
+	if (node->kind == ND_VAR) {
+		// 根据变量名(a/b/c...)硬编码计算其相对于rbp的栈偏移量(每个变量占8字节)
+		int offset = (node->name - 'a' + 1) * 8;
+		printf("  lea rax,[rbp-%d]\n", offset); // 将变量的有效地址加载到rax寄存器
+		printf("  push rax\n"); // 将计算出的变量地址压入栈顶
+		return;
+	}
+
+	error("不是一个左值");
+}
+
+static void load(void) {
+	printf("  pop rax\n");
+	printf("  mov rax, [rax]\n"); // // 以rax中的值为指针，从内存中读取对应数据存回rax
+	printf("  push rax\n"); // 将读取到的值重新压入栈顶(栈顶内容从“地址”变为“值”)
+}
+
+static void store(void) {
+	printf("  pop rdi\n");
+	printf("  pop rax\n");
+	printf("  mov [rax], rdi\n");
+	printf("  push rdi\n");
+}
+
 // 生成函数
 static void gen(Node* node) {
 
@@ -13,10 +40,19 @@ static void gen(Node* node) {
 		gen(node->lhs);
 		printf("  add rsp,8\n"); // 清理栈空间，丢弃表达式的返回值。
 		return;
+	case ND_VAR:
+		gen_addr(node);
+		load();
+		return;
+	case ND_ASSIGN:
+		gen_addr(node->lhs);
+		gen(node->rhs);
+		store();
+		return;
 	case ND_RETURN: // 如果是return语句，直接生成汇编返回
 		gen(node->lhs);
 		printf("  pop rax\n");
-		printf("  ret\n");
+		printf("  jmp .L.return\n"); // 清理及返回逻辑,统一跳转到这个公共的返回块
 		return;
 	}
 
@@ -89,9 +125,19 @@ void codegen(Node* node) {
 	printf(".global main\n");
 	printf("main:\n");
 
+	// 函数入口处建立栈帧(Stack Frame)
+	printf("  push rbp\n"); // 基指针压栈保存，以便函数返回时恢复
+	printf("  mov rbp, rsp\n"); // 建立当前函数栈帧基准
+	printf("  sub rsp, 208\n"); // 将栈指针向下移动208字节，为局部变量和临时数据预分配空间
+								// x86-64 System V ABI 要求 call 指令后 rsp 必须 16字
+								// 节对齐，208 = 13 × 16，满足此要求.
+
 	for (Node* n = node; n; n = n->next) 
 		gen(n); // 生成每一段代码
 	
-	// 汇编结束
+	// 函数尾声(Function Epilogue)
+	printf(".L.return:\n"); // 定义局部标签，作为函数内所有 return 语句的统一跳转目标
+	printf("  mov rsp, rbp\n"); // 将栈指针恢复到基指针位置，一次性释放所有局部变量空间
+	printf("  pop rbp\n"); // 从栈顶弹出之前保存的旧基指针，恢复调用者的栈帧基准
 	printf("  ret\n");
 }

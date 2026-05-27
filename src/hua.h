@@ -14,6 +14,7 @@
 // Token种类枚举
 typedef enum {
 	TK_RESERVED, // 关键字或标点符
+	TK_IDENT, // 标识符
 	TK_NUM, // 整数字面量
 	TK_EOF, // EOF标记
 } TokenKind;
@@ -31,6 +32,7 @@ struct Token {
 void error(char* fmt, ...);
 void error_at(char* loc, char* fmt, ...);
 bool consume(char* op);
+Token* consume_ident(void);
 void expect(char* op);
 long expect_number(void);
 bool at_eof(void);
@@ -55,8 +57,10 @@ typedef enum {
 	ND_NE, // 不等于
 	ND_LT, // 小于
 	ND_LE, // 小于等于
+	ND_ASSIGN, // 赋值
 	ND_RETURN, // 返回
 	ND_EXPR_STMT, // 表达式语句
+	ND_VAR, // 变量
 	ND_NUM, // 整数
 } NodeKind;
 
@@ -68,6 +72,7 @@ struct Node
 	Node* next; // 下一个Node
 	Node* lhs; // 左节点
 	Node* rhs; // 右节点
+	char name; // 如果为变量则有用
 	long val; // 如果为整数枚举则有使用
 };
 
