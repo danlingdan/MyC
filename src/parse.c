@@ -110,6 +110,15 @@ static Node* relational(void)
 static Node* add(void)
 {
 	Node* node = mul();
+
+	for (;;) {
+		if (consume("+"))
+			node = new_binary(ND_ADD, node, mul());
+		else if (consume("-"))
+			node = new_binary(ND_SUB, node, mul());
+		else
+			return node;
+	}
 }
 
 // mul 解析乘法/除法表达式，左操作数为 unary，右侧可重复匹配 "* unary" 或 "/ unary"(左结合)
@@ -137,8 +146,7 @@ static Node* unary(void) {
 }
 
 // 最底层原子单元(mainly符号如括号数字等)
-static Node* primary(void)
-{
+static Node* primary(void) {
 	if (consume("(")) {
 		Node* node = expr();
 		expect(")");

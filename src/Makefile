@@ -5,7 +5,7 @@ OBJS=$(SRCS:.c=.o)
 huacc: $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
-$(OBJS): chibi.h
+$(OBJS): hua.h
 
 test: huacc
 	./test.sh

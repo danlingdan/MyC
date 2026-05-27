@@ -99,7 +99,7 @@ Token* tokenize(void) {
 
 		// 关键字
 		// return关键字
-		if (startswith(p, "return") && !is_alpha(p[6])) {
+		if (startswith(p, "return") && !is_alnum(p[6])) {
 			cur = new_token(TK_RESERVED, cur, p, 6);
 			p += 6;
 			continue;
