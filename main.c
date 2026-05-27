@@ -92,6 +92,11 @@ Token* new_token(TokenKind kind, Token* cur, char* str, int len) {
 	return tok;
 }
 
+// 字符串前缀判断
+bool startswith(char* p, char* q) {
+	return strncmp(p, q, strlen(q)) == 0;
+}
+
 // 对用户输入进行分词返回新的tokens
 Token* tokenize(void) {
 	char* p = user_input;
@@ -103,6 +108,13 @@ Token* tokenize(void) {
 		// 跳过空白字符
 		if (isspace(*p)) {
 			p++;
+			continue;
+		}
+
+		// 多字母标点符号
+		if (startswith(p, "==") || startswith(p, "!=") || startswith(p, ">=") || startswith(p, "<=")) {
+			cur = new_token(TK_RESERVED, cur, p, 2);
+			p += 2;
 			continue;
 		}
 
@@ -139,6 +151,10 @@ typedef enum {
 	ND_SUB, // 减
 	ND_MUL, // 乘
 	ND_DIV, // 除
+	ND_EQ, // 等于
+	ND_NE, // 不等于
+	ND_LT, // 小于
+	ND_LE, // 小于等于
 	ND_NUM, // 整数
 } NodeKind;
 
@@ -176,26 +192,61 @@ static Node* new_num(int val) {
 
 //向前声明
 static Node* expr(void);
+static Node* equality(void);
+static Node* relational(void);
+static Node* add(void);
 static Node* mul(void);
 static Node* unary(void);
 static Node* primary(void);
 
-// 一个表达式（expr）由一个乘法项（mul）开头，后面可以跟零个或多个“加/减号 + 乘法项”的组合。
+// expr 是语法的顶层入口，当前直接委托给 equality 解析（预留扩展赋值等更低优先级运算符的位置）
 static Node* expr(void)
 {
-	Node* node = mul();
+	return equality();
+}
+
+// // equality 解析相等性表达式，以 relational 为左操作数，右侧可重复匹配 "==" 或 "!=" 连接 relational(左结合)
+static Node* equality(void)
+{
+	Node* node = relational();
 
 	for (;;) {
-		if (consume("+"))
-			node = new_binary(ND_ADD, node, mul());
-		else if (consume("-"))
-			node = new_binary(ND_SUB, node, mul());
+		if (consume("=="))
+			node = new_binary(ND_EQ, node, relational());
+		else if (consume("!="))
+			node = new_binary(ND_NE, node, relational());
 		else
 			return node;
 	}
 }
 
-// mul 解析乘法/除法表达式，左操作数为 unary，右侧可重复匹配 "* unary" 或 "/ unary"（左结合）
+// relational 解析关系表达式，以 add 为左操作数，右侧可重复匹配 "<"、"<="、">"、">=" 连接 add(左结合)
+static Node* relational(void)
+{
+	Node* node = add();
+
+	for (;;) {
+		if (consume("<"))
+			node = new_binary(ND_LT, node, add());
+		else if (consume("<="))
+			node = new_binary(ND_LE, node, add());
+		else if (consume(">"))
+			node = new_binary(ND_LT, add(), node);
+		else if (consume(">="))
+			node = new_binary(ND_LE, add(), node);
+		else
+			return node;
+	}
+
+}
+
+// add 解析加减法表达式，以 mul 为左操作数，右侧可重复匹配 "+" 或 "-" 连接 mul(左结合)
+static Node* add(void)
+{
+	Node* node = mul();
+}
+
+// mul 解析乘法/除法表达式，左操作数为 unary，右侧可重复匹配 "* unary" 或 "/ unary"(左结合)
 static Node* mul(void)
 {
 	Node* node = unary();
@@ -253,6 +304,12 @@ static void gen(Node* node) {
 	左操作数始终存放在 rax 寄存器中。
 	右操作数始终存放在 rdi 寄存器中。
 	计算结果始终写回 rax 寄存器。
+
+	sete  al	==	相等 (Equal)				ZF=1
+	setne al	!=	不相等 (Not Equal)		ZF=0
+	setl  al	<	小于 (Less)				SF≠OF
+	setle al	<=	小于等于 (Less or Equal)	ZF=1或SF≠OF
+
 	*/
 
 
@@ -271,6 +328,26 @@ static void gen(Node* node) {
 	case ND_DIV:
 		printf("  cqo\n"); // 符号扩展
 		printf("  idiv rdi\n"); // 用rdx:rax ÷ rdi，商存入 rax，余数存入 rdx
+		break;
+	case ND_EQ:
+		printf("  cmp rax,rdi\n");
+		printf("  sete al\n");
+		printf("  movzb rax,al\n");
+		break;
+	case ND_LE:
+		printf("  cmp rax, rdi\n");
+		printf("  setne al\n");
+		printf("  movzb rax, al\n");
+		break;
+	case ND_LT:
+		printf("  cmp rax, rdi\n");
+		printf("  setl al\n");
+		printf("  movzb rax, al\n");
+		break;
+	case ND_NE:
+		printf("  cmp rax, rdi\n");
+		printf("  setle al\n");
+		printf("  movzb rax, al\n");
 		break;
 	}
 
