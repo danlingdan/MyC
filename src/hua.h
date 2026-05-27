@@ -1,3 +1,4 @@
+#pragma once
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -62,12 +63,13 @@ typedef struct Node Node;
 struct Node
 {
 	NodeKind kind;
+	Node* next; // 下一个Node
 	Node* lhs; // 左节点
 	Node* rhs; // 右节点
 	long val; // 如果为整数枚举则有使用
 };
 
-Node* expr(void);
+Node* program(void);
 
 //
 // codegen.c

@@ -22,7 +22,37 @@ static Node* new_num(int val) {
 	return node;
 }
 
-// expr 是语法的顶层入口，当前直接委托给 equality 解析（预留扩展赋值等更低优先级运算符的位置）
+// 向前声明
+static Node* stmt(void);
+static Node* expr(void);
+static Node* equality(void);
+static Node* relational(void);
+static Node* add(void);
+static Node* mul(void);
+static Node* unary(void);
+static Node* primary(void);
+
+// program 是编译单元的顶层规则，匹配零个或多个 stmt（语句），即整个程序由一系列语句顺序组成
+Node* program(void) {
+	Node head = {};
+	Node* cur = &head;
+
+	while (!at_eof())
+	{
+		cur->next = stmt();
+		cur = cur->next;
+	}
+	return head.next;
+}
+
+// stmt 解析语句，当前仅支持表达式语句：先解析一个 expr，再期望匹配分号 ";"
+static Node* stmt(void) {
+	Node* node = expr();
+	expect(";");
+	return node;
+}
+
+// expr 是表达式的入口规则，当前直接委托给 equality 解析（即表达式的最顶层就是相等性运算）
 static Node* expr(void)
 {
 	return equality();
@@ -98,9 +128,9 @@ static Node* primary(void)
 {
 	if (consume("(")) {
 		Node* node = expr();
-		except(")");
+		expect(")");
 		return node;
 	}
 
-	return new_num(except_number());
+	return new_num(expect_number());
 }

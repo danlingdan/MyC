@@ -1,12 +1,16 @@
 CFLAGS=-std=c11 -g -static -fno-common
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
-MyC: main.o
-	$(CC) -o $@ $? $(LDFLAGS)
+huacc: $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
-test: MyC 
+$(OBJS): chibi.h
+
+test: huacc
 	./test.sh
 
-clean: 
-	rm -f MyC *.o *~ tmp*
+clean:
+	rm -f huacc *.o *~ tmp*
 
 .PHONY: test clean

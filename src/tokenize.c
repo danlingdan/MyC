@@ -29,7 +29,7 @@ void error_at(char* loc, char* fmt, ...) {
 }
 
 // 如果当前标记与 `op` 匹配，消耗它
-bool consume(char op) {
+bool consume(char* op) {
 	if (token->kind != TK_RESERVED || strlen(op) != token->length || strncmp(token->str, op, token->length))
 		return false;
 	// 遍历下一个token
@@ -38,14 +38,14 @@ bool consume(char op) {
 }
 
 // 确保当前的token为op
-void except(char op) {
+void expect(char* op) {
 	if (token->kind != TK_RESERVED || strlen(op) != token->length || strncmp(token->str, op, token->length))
 		error_at(token->str, "excepted \"%s\"", op);
 	token = token->next;
 }
 
 // 确保当前token为TK_NUM
-long except_number(void) {
+long expect_number(void) {
 	if (token->kind != TK_NUM)
 		error_at(token->str, "excepted 一个数字");
 	long val = token->val;

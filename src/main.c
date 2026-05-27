@@ -11,7 +11,7 @@ int main(int argc,char **argv) {
 	// 准备token分词和解析
 	user_input = argv[1];
 	token = tokenize();
-	Node* node = expr();
+	Node* node = program();
 
 	// 生成汇编
 	codegen(node);

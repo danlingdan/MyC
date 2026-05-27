@@ -80,8 +80,13 @@ void codegen(Node* node) {
 
 	gen(node);
 
-	// 结果必须在栈顶,出栈到rax来拿到程序退出码
-	printf("  pop rax\n");
+	for (Node* n = node; n; n = n->next) {
+		// 生成每一段代码
+		gen(n);
+		// 结果必须在栈顶,出栈到rax来拿到退出码
+		printf("  pop rax\n");
+	}
+	
 	// 汇编结束
 	printf("  ret\n");
 }
