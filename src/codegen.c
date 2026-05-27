@@ -9,6 +9,10 @@ static void gen(Node* node) {
 	case ND_NUM: // 如果是数字,压栈
 		printf("  push %ld\n", node->val);
 		return;
+	case ND_EXPR_STMT:
+		gen(node->lhs);
+		printf("  add rsp,8\n"); // 清理栈空间，丢弃表达式的返回值。
+		return;
 	case ND_RETURN: // 如果是return语句，直接生成汇编返回
 		gen(node->lhs);
 		printf("  pop rax\n");
@@ -85,12 +89,8 @@ void codegen(Node* node) {
 	printf(".global main\n");
 	printf("main:\n");
 
-	for (Node* n = node; n; n = n->next) {
-		// 生成每一段代码
-		gen(n);
-		// 结果必须在栈顶,出栈到rax来拿到退出码
-		printf("  pop rax\n");
-	}
+	for (Node* n = node; n; n = n->next) 
+		gen(n); // 生成每一段代码
 	
 	// 汇编结束
 	printf("  ret\n");
