@@ -21,6 +21,9 @@ struct Token {
 	char* str; // Token字符串
 };
 
+// 输入程序
+char* user_input;
+
 // 当前token
 Token* token;
 
@@ -30,6 +33,20 @@ void error(char* fmt, ...) {
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap); // 将格式化内容输出到 stderr
 	fprintf(stderr, "\n"); // 向 stderr 追加一个换行符
+	exit(1);
+}
+
+// 报告错误且带有位置
+void error_at(char* loc, char* fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+
+	int pos = loc - user_input;
+	fprintf(stderr, "%s\n", user_input);
+	fprintf(stderr, "%*s\n", pos, ""); // 输出位置空间
+	fprintf(stderr, "^ ");
+	vfprintf(stderr, fmt, ap);
+	fprintf(stderr, "\n");
 	exit(1);
 }
 
@@ -45,14 +62,14 @@ bool consume(char op) {
 // 确保当前的token为op
 void except(char op) {
 	if (token->kind != TK_RESERVED || token->str[0] != op)
-		error("excepted '%c'", op);
+		error_at(token->str, "excepted '%c'", op);
 	token = token->next;
 }
 
 // 确保当前token为TK_NUM
 long except_number(void) {
 	if (token->kind != TK_NUM)
-		error("excepted 一个数字");
+		error_at(token->str, "excepted 一个数字");
 	long val = token->val;
 	token = token->next;
 	return val;
@@ -71,8 +88,9 @@ Token* new_token(TokenKind kind, Token* cur, char* str) {
 	cur->next = tok;
 }
 
-// 对p进行分词返回新的tokens
-Token* tokenize(char* p) {
+// 对用户输入进行分词返回新的tokens
+Token* tokenize(void) {
+	char* p = user_input;
 	Token head = {};
 	Token* cur = &head;
 
@@ -98,7 +116,7 @@ Token* tokenize(char* p) {
 		}
 
 		// 其他未知
-		error("未知token");
+		error_at(p, "未知token");
 
 	}
 
@@ -118,7 +136,8 @@ int main(int argc,char **argv) {
 	}
 
 	// 准备token分词
-	token = tokenize(argv[1]);
+	user_input = argv[1];
+	token = tokenize();
 
 	// 汇编全局变量
 	printf(".intel_syntax noprefix\n");
