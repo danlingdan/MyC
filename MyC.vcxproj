@@ -150,6 +150,7 @@
     <None Include=".gitignore" />
     <None Include="Makefile" />
     <None Include="MyC.slnx" />
+    <None Include="ROADMAP.md" />
     <None Include="test.ps1" />
     <None Include="test.sh" />
   </ItemGroup>

@@ -26,5 +26,6 @@
     <None Include=".gitignore" />
     <None Include="Makefile" />
     <None Include="test.ps1" />
+    <None Include="ROADMAP.md" />
   </ItemGroup>
 </Project>
