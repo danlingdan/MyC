@@ -15,17 +15,30 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.c">
+    <ClCompile Include="src\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\codegen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tokenize.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="test.sh" />
+    <None Include="test\test.sh" />
     <None Include="MyC.slnx" />
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
-    <None Include="Makefile" />
-    <None Include="test.ps1" />
+    <None Include="src\Makefile" />
     <None Include="ROADMAP.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\hua.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

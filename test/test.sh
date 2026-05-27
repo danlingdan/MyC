@@ -3,7 +3,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./cc "$input" > tmp.s
+  ./huacc "$input" > tmp.s
   gcc -static -o tmp tmp.s
   ./tmp
   actual="$?"
