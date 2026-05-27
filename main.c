@@ -20,6 +20,7 @@ struct Token {
 	Token* next; // 下一个Token
 	long val; // 如果是TK_NUM,那么这是它的值
 	char* str; // Token字符串
+	int length; // Token长度
 };
 
 // 输入程序
@@ -53,7 +54,7 @@ void error_at(char* loc, char* fmt, ...) {
 
 // 如果当前标记与 `op` 匹配，消耗它
 bool consume(char op) {
-	if (token->kind != TK_RESERVED || token->str[0] != op)
+	if (token->kind != TK_RESERVED || strlen(op) != token->length || strncmp(token->str, op, token->length))
 		return false;
 	// 遍历下一个token
 	token = token->next;
@@ -62,8 +63,8 @@ bool consume(char op) {
 
 // 确保当前的token为op
 void except(char op) {
-	if (token->kind != TK_RESERVED || token->str[0] != op)
-		error_at(token->str, "excepted '%c'", op);
+	if (token->kind != TK_RESERVED || strlen(op) != token->length || strncmp(token->str, op, token->length))
+		error_at(token->str, "excepted \"%s\"", op);
 	token = token->next;
 }
 
@@ -82,10 +83,11 @@ bool at_eof(void) {
 }
 
 // 添加一个新的Token然后放入token链表中
-Token* new_token(TokenKind kind, Token* cur, char* str) {
+Token* new_token(TokenKind kind, Token* cur, char* str, int len) {
 	Token* tok = calloc(1, sizeof(Token));
 	tok->str = str;
 	tok->kind = kind;
+	tok->length = len;
 	cur->next = tok;
 	return tok;
 }
@@ -104,16 +106,18 @@ Token* tokenize(void) {
 			continue;
 		}
 
-		// 运算符
+		// 单字母标点符号
 		if (ispunct(*p)) {
-			cur = new_token(TK_RESERVED, cur, p++);
+			cur = new_token(TK_RESERVED, cur, p++, 1);
 			continue;
 		}
 
 		// 整数字面量
 		if (isdigit(*p)) {
-			cur = new_token(TK_NUM, cur, p);
+			cur = new_token(TK_NUM, cur, p, 0);
+			char* q = p;
 			cur->val = strtol(p, &p, 10);
+			cur->length = p - q;
 			continue;
 		}
 
@@ -123,7 +127,7 @@ Token* tokenize(void) {
 	}
 
 	// 文件结束
-	new_token(TK_EOF, cur, p++);
+	new_token(TK_EOF, cur, p++, 0);
 	return head.next;
 }
 
@@ -182,9 +186,9 @@ static Node* expr(void)
 	Node* node = mul();
 
 	for (;;) {
-		if (consume('+'))
+		if (consume("+"))
 			node = new_binary(ND_ADD, node, mul());
-		else if (consume('-'))
+		else if (consume("-"))
 			node = new_binary(ND_SUB, node, mul());
 		else
 			return node;
@@ -197,9 +201,9 @@ static Node* mul(void)
 	Node* node = unary();
 
 	for (;;) {
-		if (consume('*'))
+		if (consume("*"))
 			node = new_binary(ND_MUL, node, unary());
-		else if (consume('/'))
+		else if (consume("/"))
 			node = new_binary(ND_DIV, node, unary());
 		else
 			return node;
@@ -208,9 +212,9 @@ static Node* mul(void)
 
 // unary 解析一元表达式：可选的前置 "+" 或 "-" 后递归跟随 unary，否则回退到 primary 解析原子单元
 static Node* unary(void) {
-	if (consume('+'))
+	if (consume("+"))
 		return unary();
-	if (consume('-'))
+	if (consume("-"))
 		return new_binary(ND_SUB, new_num(0), unary());
 	return primary();
 }
@@ -218,9 +222,9 @@ static Node* unary(void) {
 // 最底层原子单元(mainly符号如括号数字等)
 static Node* primary(void)
 {
-	if (consume('(')) {
+	if (consume("(")) {
 		Node* node = expr();
-		except(')');
+		except(")");
 		return node;
 	}
 
