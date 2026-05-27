@@ -87,6 +87,7 @@ Token* new_token(TokenKind kind, Token* cur, char* str) {
 	tok->str = str;
 	tok->kind = kind;
 	cur->next = tok;
+	return tok;
 }
 
 // 对用户输入进行分词返回新的tokens
@@ -111,7 +112,7 @@ Token* tokenize(void) {
 
 		// 整数字面量
 		if (isdigit(*p)) {
-			cur = new_token(TK_NUM, cur, p++);
+			cur = new_token(TK_NUM, cur, p);
 			cur->val = strtol(p, &p, 10);
 			continue;
 		}

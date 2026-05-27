@@ -25,5 +25,6 @@
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
     <None Include="Makefile" />
+    <None Include="test.ps1" />
   </ItemGroup>
 </Project>
