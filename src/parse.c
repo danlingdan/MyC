@@ -15,6 +15,13 @@ static Node* new_binary(NodeKind kind, Node* lhs, Node* rhs) {
 	return node;
 }
 
+// 创建新一元运算符
+static Node* new_unary(NodeKind kind, Node* expr) {
+	Node* node = new_node(kind);
+	node->lhs = expr;
+	return node;
+}
+
 // 创建新整数Node
 static Node* new_num(int val) {
 	Node* node = new_node(ND_NUM);
@@ -45,8 +52,14 @@ Node* program(void) {
 	return head.next;
 }
 
-// stmt 解析语句，当前仅支持表达式语句：先解析一个 expr，再期望匹配分号 ";"
+// stmt 解析语句：支持 return 表达式语句和普通表达式语句，均以分号结尾
 static Node* stmt(void) {
+	if (consume("return")) {
+		Node* node = new_unary(ND_RETURN, expr());
+		expect(";");
+		return node;
+	}
+
 	Node* node = expr();
 	expect(";");
 	return node;

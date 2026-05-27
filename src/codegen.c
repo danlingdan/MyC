@@ -3,9 +3,16 @@
 /* 汇编代码生成器 */
 // 生成函数
 static void gen(Node* node) {
-	// 如果是数字,压栈
-	if (node->kind == ND_NUM) {
+
+	switch (node->kind)
+	{
+	case ND_NUM: // 如果是数字,压栈
 		printf("  push %ld\n", node->val);
+		return;
+	case ND_RETURN: // 如果是return语句，直接生成汇编返回
+		gen(node->lhs);
+		printf("  pop rax\n");
+		printf("  ret\n");
 		return;
 	}
 
