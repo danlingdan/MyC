@@ -94,7 +94,7 @@ static bool is_alnum(char c) {
 
 static char* start_with_reserved(char* p) {
 	// 关键字
-	static char* kw[] = { "return","if","else" };
+	static char* kw[] = { "return","if","else","while" };
 
 	for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
 		int len = strlen(kw[i]);
@@ -115,7 +115,7 @@ static char* start_with_reserved(char* p) {
 // 对用户输入进行分词返回新的tokens
 Token* tokenize(void) {
 	char* p = user_input;
-	Token head = {};
+	Token head = { 0 };
 	Token* cur = &head;
 
 	while (*p)

@@ -1,7 +1,7 @@
 #include "include/hua.h"
 
 // 文件全局变量定义
-// if语句的唯一序列号
+// if 或 while语句的唯一序列号
 static int labelseq = 1;
 
 /* 汇编代码生成器 */
@@ -73,6 +73,19 @@ static void gen(Node* node) {
 			gen(node->then);
 			printf(".L.end.%d:\n", seq);
 		}
+		return;
+	}
+	case ND_WHILE:
+	{
+		int seq = labelseq++;
+		printf(".L.begin.%d:\n", seq);
+		gen(node->cond);
+		printf("  pop rax\n");
+		printf("  cmp rax, 0\n");
+		printf("  je  .L.end.%d\n", seq);
+		gen(node->then);
+		printf("  jmp .L.begin.%d\n", seq);
+		printf(".L.end.%d:\n", seq);
 		return;
 	}
 	case ND_RETURN: // 如果是return语句，直接生成汇编返回

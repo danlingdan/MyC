@@ -71,7 +71,7 @@ static Node* primary(void);
 Function* program(void) {
 	locals = NULL;
 
-	Node head = {};
+	Node head = { 0 };
 	Node* cur = &head;
 
 	while (!at_eof())
@@ -90,7 +90,11 @@ static Node* read_expr_stmt(void) {
 	return new_unary(ND_EXPR_STMT, expr());
 }
 
-// stmt 解析语句：支持 return 表达式、if-else 条件分支及普通表达式语句，均以分号结尾（if 除外）
+// stmt 解析语句：
+// stmt = "return" expr ";"
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "while" "(" expr ")" stmt
+//      | expr ";"
 static Node* stmt(void) {
 	if (consume("return")) {
 		Node* node = new_unary(ND_RETURN, expr());
@@ -106,6 +110,15 @@ static Node* stmt(void) {
 		node->then = stmt();
 		if (consume("else"))
 			node->els = expr();
+		return node;
+	}
+
+	if (consume("while")) {
+		Node* node = new_node(ND_WHILE);
+		expect("(");
+		node->cond = expr();
+		expect(")");
+		node->then = stmt();
 		return node;
 	}
 

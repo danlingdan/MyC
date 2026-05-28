@@ -19,17 +19,12 @@
  * @param src   指向源空结尾字节串的指针。
  * @param size  最多从 src 复制的字节数（不包括结尾的空字符）。
  *
+ * @warning 返回的指针必须通过 free() 释放，否则会造成内存泄漏。
+ *
  * @return 指向新分配字符串的指针，该字符串包含 src 的前 size 个字符
  *         （若不足 size 则以整个 src 为准），并总是以空字符结尾。
  *         如果发生错误（例如内存分配失败），则返回空指针，并且可能
  *         设置 errno 以指示错误原因。
- *
- * @note 该函数的行为与 POSIX 标准中的 strndup 完全相同，唯一区别是
- *       本函数在出错时允许但不要求设置 errno。
- *
- * @warning 返回的指针必须通过 free() 释放，否则会造成内存泄漏。
- *
- * @see strdup, malloc, free
  */
 extern char* strndup(const char* src, size_t size);
 
@@ -97,6 +92,7 @@ typedef enum {
 	ND_ASSIGN, // 赋值
 	ND_RETURN, // 返回
 	ND_IF, // IF
+	ND_WHILE, // WHILE
 	ND_EXPR_STMT, // 表达式语句
 	ND_VAR, // 变量
 	ND_NUM, // 整数
@@ -112,7 +108,7 @@ struct Node
 	Node* lhs; // 左节点
 	Node* rhs; // 右节点
 
-	// if语句
+	// if或 while语句
 	Node* cond; // 条件
 	Node* then; // 做什么
 	Node* els; // 否则
