@@ -93,6 +93,7 @@ typedef enum {
 	ND_RETURN, // 返回
 	ND_IF, // IF
 	ND_WHILE, // WHILE
+	ND_FOR, // FOR
 	ND_EXPR_STMT, // 表达式语句
 	ND_VAR, // 变量
 	ND_NUM, // 整数
@@ -108,10 +109,12 @@ struct Node
 	Node* lhs; // 左节点
 	Node* rhs; // 右节点
 
-	// if或 while语句
+	// if或 while 或for语句
 	Node* cond; // 条件
-	Node* then; // 做什么
+	Node* then; // 条件为真时语句
 	Node* els; // 否则
+	Node* init; // 初始化表达式
+	Node* inc; // 递增/更新表达式
 
 	Var* var; // 如果为变量则有用
 	long val; // 如果为整数枚举则有使用
