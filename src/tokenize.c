@@ -115,7 +115,7 @@ Token* tokenize(void) {
 		}
 
 		// 标识符
-		if ('a' <= *p && *p <= "z") {
+		if ('a' <= *p && *p <= 'z') {
 			cur = new_token(TK_IDENT, cur, p++, 1);
 			continue;
 		}
