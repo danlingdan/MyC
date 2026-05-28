@@ -96,6 +96,7 @@ typedef enum {
 	ND_LE, // 小于等于
 	ND_ASSIGN, // 赋值
 	ND_RETURN, // 返回
+	ND_IF, // IF
 	ND_EXPR_STMT, // 表达式语句
 	ND_VAR, // 变量
 	ND_NUM, // 整数
@@ -107,8 +108,15 @@ struct Node
 {
 	NodeKind kind;
 	Node* next; // 下一个Node
+
 	Node* lhs; // 左节点
 	Node* rhs; // 右节点
+
+	// if语句
+	Node* cond; // 条件
+	Node* then; // 做什么
+	Node* els; // 否则
+
 	Var* var; // 如果为变量则有用
 	long val; // 如果为整数枚举则有使用
 };

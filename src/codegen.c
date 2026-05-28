@@ -1,5 +1,9 @@
 #include "include/hua.h"
 
+// 文件全局变量定义
+// if语句的唯一序列号
+static int labelseq = 1;
+
 /* 汇编代码生成器 */
 // 将Node地址入栈
 static void gen_addr(Node* node) {
@@ -48,6 +52,29 @@ static void gen(Node* node) {
 		gen(node->rhs);
 		store();
 		return;
+	case ND_IF: {
+		int seq = labelseq++;
+		if (node->els) { // 带 else 分支的 if-else 语句
+			gen(node->cond);
+			printf("  pop rax\n");
+			printf("  cmp rax, 0\n");
+			printf("  je  .L.else.%d\n", seq);
+			gen(node->then);
+			printf("  jmp .L.end.%d\n", seq);
+			printf(".L.else.%d:\n", seq);
+			gen(node->els);
+			printf(".L.end.%d:\n", seq);
+		}
+		else { // 不带 else 分支的 if-else 语句
+			gen(node->cond);
+			printf("  pop rax\n");
+			printf("  cmp rax, 0\n");
+			printf("  je  .L.end.%d\n", seq);
+			gen(node->then);
+			printf(".L.end.%d:\n", seq);
+		}
+		return;
+	}
 	case ND_RETURN: // 如果是return语句，直接生成汇编返回
 		gen(node->lhs);
 		printf("  pop rax\n");

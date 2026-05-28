@@ -92,6 +92,26 @@ static bool is_alnum(char c) {
 	return is_alpha(c) || ('0' <= c && c <= '9');
 }
 
+static char* start_with_reserved(char* p) {
+	// 关键字
+	static char* kw[] = { "return","if","else" };
+
+	for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
+		int len = strlen(kw[i]);
+		if (startswith(p, kw[i]) && !is_alnum(p[len]))
+			return kw[i];
+	}
+
+	// 多字母标点符号
+	static char* ops[] = { "==", "!=", "<=", ">=" };
+
+	for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++)
+		if (startswith(p, ops[i]))
+			return ops[i];
+
+	return NULL;
+}
+
 // 对用户输入进行分词返回新的tokens
 Token* tokenize(void) {
 	char* p = user_input;
@@ -106,11 +126,12 @@ Token* tokenize(void) {
 			continue;
 		}
 
-		// 关键字
-		// return关键字
-		if (startswith(p, "return") && !is_alnum(p[6])) {
-			cur = new_token(TK_RESERVED, cur, p, 6);
-			p += 6;
+		// 关键字 或 多字母标点符号
+		char* kw = start_with_reserved(p);
+		if (kw) {
+			int len = strlen(kw);
+			cur = new_token(TK_RESERVED, cur, p, len);
+			p += len;
 			continue;
 		}
 
@@ -131,13 +152,6 @@ Token* tokenize(void) {
 				p++;
 			}
 			cur = new_token(TK_IDENT, cur, q, p - q);
-			continue;
-		}
-
-		// 多字母标点符号
-		if (startswith(p, "==") || startswith(p, "!=") || startswith(p, ">=") || startswith(p, "<=")) {
-			cur = new_token(TK_RESERVED, cur, p, 2);
-			p += 2;
 			continue;
 		}
 

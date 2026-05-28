@@ -364,3 +364,7 @@ FodyWeavers.xsd
 
 # 用户自定义
 *.o
+tmp
+*.s
+HuaC
+NUL

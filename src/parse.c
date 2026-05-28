@@ -86,7 +86,11 @@ Function* program(void) {
 	return prog;
 }
 
-// stmt 解析语句：支持 return 表达式语句和普通表达式语句，均以分号结尾
+static Node* read_expr_stmt(void) {
+	return new_unary(ND_EXPR_STMT, expr());
+}
+
+// stmt 解析语句：支持 return 表达式、if-else 条件分支及普通表达式语句，均以分号结尾（if 除外）
 static Node* stmt(void) {
 	if (consume("return")) {
 		Node* node = new_unary(ND_RETURN, expr());
@@ -94,7 +98,18 @@ static Node* stmt(void) {
 		return node;
 	}
 
-	Node* node = new_unary(ND_EXPR_STMT, expr());
+	if (consume("if")) {
+		Node* node = new_node(ND_IF);
+		expect("(");
+		node->cond = expr();
+		expect(")");
+		node->then = stmt();
+		if (consume("else"))
+			node->els = expr();
+		return node;
+	}
+
+	Node* node = read_expr_stmt();
 	expect(";");
 	return node;
 }
