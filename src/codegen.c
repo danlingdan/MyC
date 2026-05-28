@@ -1,13 +1,12 @@
-#include "hua.h"
+#include "include/hua.h"
 
 /* 汇编代码生成器 */
 // 将Node地址入栈
 static void gen_addr(Node* node) {
 	// 判断当前节点是否为变量（只有变量才有内存地址）
 	if (node->kind == ND_VAR) {
-		// 根据变量名(a/b/c...)硬编码计算其相对于rbp的栈偏移量(每个变量占8字节)
-		int offset = (node->name - 'a' + 1) * 8;
-		printf("  lea rax,[rbp-%d]\n", offset); // 将变量的有效地址加载到rax寄存器
+		// 相对于rbp的栈偏移量
+		printf("  lea rax,[rbp-%d]\n", node->var->offset); // 将变量的有效地址加载到rax寄存器
 		printf("  push rax\n"); // 将计算出的变量地址压入栈顶
 		return;
 	}
@@ -119,7 +118,7 @@ static void gen(Node* node) {
 	printf("  push rax\n");
 }
 
-void codegen(Node* node) {
+void codegen(Function* prog) {
 	// 输出关键全局汇编代码
 	printf(".intel_syntax noprefix\n");
 	printf(".global main\n");
@@ -128,13 +127,11 @@ void codegen(Node* node) {
 	// 函数入口处建立栈帧(Stack Frame)
 	printf("  push rbp\n"); // 基指针压栈保存，以便函数返回时恢复
 	printf("  mov rbp, rsp\n"); // 建立当前函数栈帧基准
-	printf("  sub rsp, 208\n"); // 将栈指针向下移动208字节，为局部变量和临时数据预分配空间
-								// x86-64 System V ABI 要求 call 指令后 rsp 必须 16字
-								// 节对齐，208 = 13 × 16，满足此要求.
+	printf("  sub rsp, %d\n", prog->stack_size); // x86-64SystemVABI要求call指令后 rsp 必须 16字节对齐
 
-	for (Node* n = node; n; n = n->next) 
+	for (Node* n = prog->node; n; n = n->next)
 		gen(n); // 生成每一段代码
-	
+
 	// 函数尾声(Function Epilogue)
 	printf(".L.return:\n"); // 定义局部标签，作为函数内所有 return 语句的统一跳转目标
 	printf("  mov rsp, rbp\n"); // 将栈指针恢复到基指针位置，一次性释放所有局部变量空间

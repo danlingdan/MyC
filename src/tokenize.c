@@ -1,4 +1,4 @@
-#include "hua.h"
+#include "include/hua.h"
 
 // 输入程序
 char* user_input;
@@ -114,9 +114,23 @@ Token* tokenize(void) {
 			continue;
 		}
 
+		// 整数字面量
+		if (isdigit(*p)) {
+			cur = new_token(TK_NUM, cur, p, 0);
+			char* q = p;
+			cur->val = strtol(p, &p, 10);
+			cur->length = p - q;
+			continue;
+		}
+
 		// 标识符
-		if ('a' <= *p && *p <= 'z') {
-			cur = new_token(TK_IDENT, cur, p++, 1);
+		if (is_alnum(*p)) {
+			char* q = p++;
+			while (is_alnum(*p))
+			{
+				p++;
+			}
+			cur = new_token(TK_IDENT, cur, q, p - q);
 			continue;
 		}
 
@@ -130,15 +144,6 @@ Token* tokenize(void) {
 		// 单字母标点符号
 		if (ispunct(*p)) {
 			cur = new_token(TK_RESERVED, cur, p++, 1);
-			continue;
-		}
-
-		// 整数字面量
-		if (isdigit(*p)) {
-			cur = new_token(TK_NUM, cur, p, 0);
-			char* q = p;
-			cur->val = strtol(p, &p, 10);
-			cur->length = p - q;
 			continue;
 		}
 

@@ -1,6 +1,6 @@
-#include "hua.h"
+#include "include/hua.h"
 
-int main(int argc,char **argv) {
+int main(int argc, char** argv) {
 
 	// 检查参数数量
 	if (argc != 2) {
@@ -11,10 +11,19 @@ int main(int argc,char **argv) {
 	// 准备token分词和解析
 	user_input = argv[1];
 	token = tokenize();
-	Node* node = program();
+	Function* prog = program();
+
+	// 为本地变量分配偏移量
+	int offset = 0;
+	for (Var* var = prog->locals; var; var = var->next) {
+		// 简单起见直接分配8字节
+		offset += 8;
+		var->offset = offset;
+	}
+	prog->stack_size = offset;
 
 	// 生成汇编
-	codegen(node);
+	codegen(prog);
 
 	return 0;
 }

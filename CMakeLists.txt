@@ -9,8 +9,6 @@ add_executable (HuaC
 	"src/parse.c" 
 	"src/tokenize.c")
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET HuaC PROPERTY C_STANDARD 23)
-endif()
-
-# TODO: Add tests and install targets if needed.
+set_property(TARGET HuaC PROPERTY C_STANDARD 23)
+set_property(TARGET HuaC PROPERTY C_STANDARD_REQUIRED ON)
+set_property(TARGET HuaC PROPERTY C_EXTENSIONS ON)

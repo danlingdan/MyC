@@ -1,4 +1,15 @@
-#include "hua.h"
+#include "include/hua.h"
+
+// 所有被解析的本地变量都存于此list
+Var* locals;
+
+// 通过name找本地变量
+static Var* find_var(Token* tok) {
+	for (Var* var = locals; var; var = var->next)
+		if (strlen(var->name) == tok->length && !strncmp(tok->str, var->name, tok->length))
+			return var;
+	return NULL;
+}
 
 // 创建新Node
 static Node* new_node(NodeKind kind) {
@@ -30,10 +41,19 @@ static Node* new_num(int val) {
 }
 
 // 创建一个新的变量Node
-static Node* new_var_node(char name) {
+static Node* new_var_node(Var* var) {
 	Node* node = new_node(ND_VAR);
-	node->name = name;
+	node->var = var;
 	return node;
+}
+
+// 创建一个新的左值
+static Var* new_lvar(char* name) {
+	Var* var = calloc(1, sizeof(Var));
+	var->next = locals;
+	var->name = name;
+	locals = var;
+	return var;
 }
 
 // 向前声明
@@ -48,7 +68,9 @@ static Node* unary(void);
 static Node* primary(void);
 
 // program 是编译单元的顶层规则，匹配零个或多个 stmt（语句），即整个程序由一系列语句顺序组成
-Node* program(void) {
+Function* program(void) {
+	locals = NULL;
+
 	Node head = {};
 	Node* cur = &head;
 
@@ -57,7 +79,11 @@ Node* program(void) {
 		cur->next = stmt();
 		cur = cur->next;
 	}
-	return head.next;
+
+	Function* prog = calloc(1, sizeof(Function));
+	prog->node = head.next;
+	prog->locals = locals;
+	return prog;
 }
 
 // stmt 解析语句：支持 return 表达式语句和普通表达式语句，均以分号结尾
@@ -171,8 +197,12 @@ static Node* primary(void) {
 	}
 
 	Token* tok = consume_ident();
-	if (tok)
-		return new_var_node(*tok->str);
+	if (tok) {
+		Var* var = find_var(tok);
+		if (!var)
+			var = new_lvar(strndup(tok->str, tok->length));
+		return new_var_node(var);
+	}
 
 	return new_num(expect_number());
 }
