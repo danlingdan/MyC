@@ -251,7 +251,9 @@ static Node* unary(void) {
 	return primary();
 }
 
-// primary 解析基本表达式：支持括号包裹的表达式、标识符或数字字面量
+// primary 解析基本表达式：
+// primary = "(" expr ")" | ident args? | num
+// args = "(" ")"
 static Node* primary(void) {
 	if (consume("(")) {
 		Node* node = expr();
@@ -261,6 +263,15 @@ static Node* primary(void) {
 
 	Token* tok = consume_ident();
 	if (tok) {
+		// 函数
+		if (consume("(")) {
+			expect(")");
+			Node* node = new_node(ND_FUNCTION);
+			node->funcname = strndup(tok->str, tok->length);
+			return node;
+		}
+
+		// 变量
 		Var* var = find_var(tok);
 		if (!var)
 			var = new_lvar(strndup(tok->str, tok->length));

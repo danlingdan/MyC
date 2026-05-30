@@ -95,6 +95,7 @@ typedef enum {
 	ND_WHILE, // WHILE
 	ND_FOR, // FOR
 	ND_BLOCK, // 区块符({xxxxx})
+	ND_FUNCTION, // 函数
 	ND_EXPR_STMT, // 表达式语句
 	ND_VAR, // 变量
 	ND_NUM, // 整数
@@ -119,6 +120,9 @@ struct Node
 
 	// 区块
 	Node* body;
+
+	// 函数
+	char* funcname;
 
 	Var* var; // 如果为变量则有用
 	long val; // 如果为整数枚举则有使用

@@ -111,6 +111,10 @@ static void gen(Node* node) {
 		for (Node* n = node->body; n; n = n->next)
 			gen(n);
 		return;
+	case ND_FUNCTION:
+		printf("  call %s\n", node->funcname);
+		printf("  push rax\n");
+		return;
 	case ND_RETURN: // 如果是return语句，直接生成汇编返回
 		gen(node->lhs);
 		printf("  pop rax\n");
